@@ -1,0 +1,12 @@
+pages:
+  stage: deploy   #  test或者deploy
+  tags: [web]
+  script:
+  - mkdir ../public
+  - mv * ../public
+  - mv ../public ./
+  artifacts:
+    paths:
+    - public
+  only:
+  - master

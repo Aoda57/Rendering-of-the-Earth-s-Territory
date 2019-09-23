@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Use correct character set. -->
+    <meta charset="utf-8">
+    <!-- Tell IE to use the latest, best version. -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- Make the application on mobile take up the full browser screen and disable user scaling. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+    <title>Hello World!</title>
+    <script src="./Build/Cesium/Cesium.js"></script>
+    <style>
+        @import url(./Build/Cesium/Widgets/widgets.css);
+        html,
+        body,
+        #cesiumContainer {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .cesium-viewer-toolbar,
+        .cesium-viewer-animationContainer,
+        .cesium-viewer-timelineContainer,
+        .cesium-viewer-bottom {}
+
+        .cesium-viewer-fullscreenContainer {}
+    </style>
+</head>
+
+<body>
+
+    <div id="cesiumContainer"></div>
+
+    <script>
+        //创建地球实体对象
+        let viewer = new Cesium.Viewer('cesiumContainer');
+
+
+        async function getdata() {
+            await fetch('./3d/countries.geo.json').then(response => response.json()).then((data) => {
+                try {
+                    let point = data.features;   //返回正常格式的json数据
+                    let len = point.length;
+                    var instance=[];
+                    for (let i = 0; i < len; i++) {
+                        let polygonName = point[i].geometry.type;
+                        let countryName = point[i].properties.name;
+                        let arrays = point[i].geometry.coordinates;  //理论得到地图数组
+                        let arr = [];
+                        var finalarrlen;  //涉及到multipolygon,不能将所有的坐标放到同一个数组中，需要将数组再细分为二维数组
+                        if (polygonName === 'MultiPolygon') {
+                            let leng = arrays.length;  //2
+                            for (var k = 0; k < leng; k++) {
+                                arr[k] = [];    //定义数组中第k个元素的类型为数组;不可以使用var，否则是重定义；
+                                for (let j in arrays[k][0]) {
+                                    arr[k].push(arrays[k][0][j][0]);  //MultiPolygon，向二维数组中push元素
+                                    arr[k].push(arrays[k][0][j][1]);
+                                }
+                            }
+                            finalarrlen = arr.length;
+                            console.log(finalarrlen);
+                        } else {
+                            arr[0] = [];
+                            for (let j in arrays[0]) {
+                                arr[0].push(arrays[0][j][0]);
+                                arr[0].push(arrays[0][j][1]);
+                            };
+                            finalarrlen = 1;
+                        }
+
+                        color = Cesium.Color.fromRandom({
+                            alpha: 1.0
+                        });
+
+                        if (countryName == 'China' || countryName == 'Taiwan') {
+                            console.log('找到中国了中国中国中国嘎嘎嘎嘎嘎嘎嘎');
+                            color = Cesium.Color.YELLOW;
+                        }
+                        for (let m = 0; m < finalarrlen; m++) {
+                            
+                            //创建形状实例
+                            instance.push( new Cesium.GeometryInstance({    //批量添加；
+                                geometry: new Cesium.PolygonGeometry({
+                                polygonHierarchy: new Cesium.PolygonHierarchy(
+                                    Cesium.Cartesian3.fromDegreesArray(arr[m])
+                                )
+                            }),
+                                attributes:{
+                                    color: color,
+                                }
+                            }))
+                            //将实例添加到容器中；
+                        }
+                    }
+
+                    viewer.scene.primitives.add(new Cesium.Primitive({
+                                geometryInstances: instance,
+                                appearance: new Cesium.EllipsoidSurfaceAppearance()
+                            }));
+
+                } catch (e) {
+                    console.log(e);
+                }
+
+            })
+        }
+        getdata();
+        创建形状
+
+    </script>
+</body>
+
+</html>
